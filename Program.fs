@@ -35,7 +35,7 @@ let writeIco (images: 'T Image list) outname =
     ]
 
     let data = Array.concat [
-        // HEADER
+        // HEADER (6 bytes)
         yield! [
             0; 1 // constants for ICO
             images.Length
@@ -45,7 +45,7 @@ let writeIco (images: 'T Image list) outname =
         for i, image in List.indexed images do
             let offset = 
                 6 + 0x10 * images.Length + List.sumBy Array.length imageBuffers.[0..i-1]
-            yield! [
+            yield! [ // (16 bytes)
                 [|
                     byte(image.Width)
                     byte(image.Height)
@@ -72,7 +72,11 @@ let ICON_SIZES = [
 ]
 
 let resized (image: Image<'T>) size =
+    if image.Height = image.Width && image.Width = size then
+        image
+    else
     let maxdim = max image.Height image.Width
+    printfn $"{image.Height} x {image.Width} -> {size}x{size}"
     let x, y = 
         if image.Height > image.Width then
             (image.Height-image.Width) /2, 0
@@ -142,7 +146,7 @@ let rec parseArgs (tokens: string list) =
 let HELP =
     "Convert an image or set of images to a Windows ICO image.
 Usage:
-    iconify -d? [default image] (-[sizes,] [size-specific override])* (-o [output file])?
+    iconify (-d [default image])? (-[sizes,] [size-specific override])* (-o [output file])?
 Examples:
     iconify example.png
     iconify example.png -16 example16px.bmp -o ../out.ico
